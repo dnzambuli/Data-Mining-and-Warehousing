@@ -1,0 +1,110 @@
+---
+title: "Colaborative Work"
+author: "Nzambuli Daniel"
+format: html
+editor: visual
+---
+
+# Generate a Random Data Set
+
+```{r}
+set.seed(213)
+```
+
+## The names of random individuals
+
+```{r}
+library(randomNames)
+rand_fname = randomNames(10000, which.names = "first")
+rand_lname = randomNames(10000, gender = 0, which.names = "last")
+```
+
+## Their gender 
+
+```{r}
+n = 10000
+g_vec = c('Male', 'Female')
+gender = sample(g_vec, n, replace = TRUE)
+```
+
+```{r}
+group_data = data.frame(fname = rand_fname,
+                        lname = rand_lname,
+                        gender = gender)
+```
+
+Their height
+
+```{r}
+# male height is minimum 4.9 and max 6.7
+# female height is minimum 4.2 and max 6.5
+
+# count the samples
+mnum = nrow(group_data[group_data$gender == 'Male',])
+fnum = 10000 - mnum
+
+# male height
+male_height = rnorm(mnum, mean = 5.8, sd = 0.3)
+male_height = pmin(pmax(male_height, 4.9), 6.7)
+
+# female height
+female_height = rnorm(fnum, mean = 5.5, sd = 0.3)
+female_height = pmin(pmax(female_height, 4.2), 6.5)
+
+```
+
+## add height data
+
+```{r}
+ 
+group_data = group_data[order(group_data$gender),]
+```
+
+```{r}
+height = c(female_height, male_height)
+length(height)
+```
+
+```{r}
+group_data$height = height
+```
+
+## The age 
+
+```{r}
+age = round(runif(10000, min = 18, max = 40))
+group_data$age = age
+```
+
+## The Weight
+
+```{r}
+# female_wgt min = 45 max = 82
+# male_wgt min = 55 max = 110
+
+# compute random weight
+# male weight
+male_weight = rnorm(mnum, mean = 82.5, sd = 2.75)
+male_weight = pmin(pmax(male_weight, 55), 110)
+male_weight = round(male_weight, 4)
+
+# female weight
+female_weight = rnorm(fnum, mean = 63.5, sd = 5.5)
+female_weight = pmin(pmax(female_weight, 45), 82)
+female_weight = round(female_weight, 4)
+
+# combine
+weight = c(female_weight, male_weight)
+
+# add to data
+group_data$weight = weight
+```
+
+## Hospitalization Date
+
+```{r}
+Dates = seq(as.Date("2020-03-01"),
+            as.Date("2020-12-31"), by = "day")
+visit_day = sample(Dates, 10000, replace = TRUE)
+group_data$hospitalized = visit_day
+```
