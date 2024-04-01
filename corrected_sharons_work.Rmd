@@ -1,0 +1,457 @@
+---
+title: "Class work"
+author: "Nzambuli Daniel"
+date: "2024-02-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Lift Confidence Support and Interest
+
+```{r}
+library(ggplot2)
+data("diamonds")
+head(diamonds)
+```
+
+## Contigency table
+
+```{r}
+# Create a contingency table to show the number of times each itemset occurs in the 
+contingency_table <-table(diamonds$cut, diamonds$clarity)
+contingency_table
+
+```
+
+## Support
+
+```{r}
+#Calculate the support for each itemset
+support <- contingency_table / sum(contingency_table)
+support
+
+```
+
+```{r}
+# Calculate the confidence for each association rule
+
+confidence <- contingency_table[lower.tri(contingency_table)] / contingency_table[colSums(contingency_table) > 0]
+confidence
+
+```
+
+## lift and interest
+
+```{r}
+#Lift# Calculate lift
+
+lift <- (confidence / support[colSums(contingency_table) > 0]) * 100
+
+# Calculate interest
+
+interest <- (support[lower.tri(contingency_table)] / support[colSums(contingency_table) > 0])* 100
+
+#Print the lift and interest for each association rule
+
+lift
+interest
+
+
+```
+
+`High support and confidence` -- the antecedent is a strong predictor of the consequent rule
+
+**Example**
+
+-   high support – large numbers or poverty occur at the same time as chronic illness
+
+-   high confidence – poverty is a strong indicator of illness
+
+-   lift $\approx 1$ possitive corre between poverty and illness
+
+## Apriori Rules
+
+```         
+rules <- apriori(transactions, parameter = list(support = 0.01, confidence = 0.8))
+```
+
+-   rules \<- apriori(transactions, parameter = list(support = 0.01, confidence = 0.8))
+
+## Eclat
+
+```         
+rules3 <- eclat(transactions, parameter = list(support = 0.01, minlen = 2))
+```
+
+# Discretization
+
+Equal-Width discretization
+
+```{r}
+# Equal-Width discretization
+equal_width_discretization <- cut(diamonds$price, breaks=5, labels = FALSE)
+diamonds$equal_width_discretization <- equal_width_discretization
+
+# visualise equal_width_discretization
+ggplot(diamonds, aes(x=equal_width_discretization, fill = as.factor(equal_width_discretization))) + 
+  geom_bar()+
+  labs(title = " Equal-Width discretization", x = "Discretized Bins", y = "Frequency") + 
+  theme_minimal()
+```
+
+Equal-Width discretization using quantiles
+
+```{r}
+# Equal-Width discretization using quantiles
+equal_width_discretization <- cut(diamonds$price, breaks = quantile(diamonds$price, probs = seq(0, 1, 0.2)), labels = FALSE)
+diamonds$equal_width_discretization <- equal_width_discretization
+
+# visualise equal_width_discretization
+ggplot(diamonds, aes(x=equal_width_discretization, fill = as.factor(equal_width_discretization))) + 
+  geom_bar()+
+  labs(title = " Equal-Width discretization", x = "Discretized Bins", y = "Frequency") + 
+  theme_minimal()
+
+```
+
+# K-means Clustering Discretization
+
+```{r}
+# K-means Clustering Discretization
+kmeans_clusters <- kmeans(diamonds$price, centers = 8)$cluster
+
+diamonds$kmeans_discretization <- as.factor(kmeans_clusters)
+
+#Visualize K-means Clustering Discretization
+
+ggplot(diamonds, aes(x = kmeans_discretization, fill = as.factor(kmeans_discretization))) +
+
+geom_bar() +
+  labs(title = "K-means Clustering Discretization", x = "Discretized Bins", y = "Frequency") + 
+  theme_minimal()
+
+
+```
+
+```{r}
+data(diamonds)
+subset_data <- diamonds[1:1000,]
+subset_data
+
+```
+
+Using decision trees for discretization
+
+```{r}
+#4. Using decision trees for discretization
+
+tree_model <- partykit::ctree(price~., data = subset_data)
+tree_model
+# Predict using the decision tree model
+tree_predictions <- as.integer(predict(tree_model, newdata = subset_data))
+
+#Assign the predicted values to a new variable
+
+subset_data$tree_discretization <- as.factor(tree_predictions)
+#Visualize Decision Tree discretization
+
+library(ggplot2)
+ggplot(subset_data, aes(x = tree_discretization, fill=subset_data$tree_discretization)) + 
+  geom_bar() + 
+  labs(title = "Decision Tree Discretization", x = "Discretized Bins", y = "Frequency") +
+  theme_minimal()
+
+```
+
+chi-merge
+
+```{r}
+#Chi-merge
+library(arules)
+chi_merge_discretization <- discretize(subset_data$price, method = "cluster")
+
+subset_data$chi_merge_discretization <-
+
+as.factor(chi_merge_discretization)
+
+#Converts the discretized values into a categorical factor variable, representing distinct bins.
+
+#Visualize Chi-Merge Discretization
+
+ggplot(subset_data, aes(x = chi_merge_discretization, fill = as.factor(chi_merge_discretization))) + 
+  geom_bar() + 
+  labs(title = "Chi-Merge Discretization", x = "Discretized Bins", y = "Frequency") + 
+  theme_minimal()
+    
+```
+
+```{r}
+library(arules)
+library(ggplot2)
+#Histogram analysis
+
+hist_breaks <- c(0, 500, 1000, 1500, 2000, max(subset_data$price))
+
+hist_counts <-hist(subset_data$price, breaks = hist_breaks, plot = FALSE) $counts
+
+subset_data$hist_discretization <- cut(subset_data$price, breaks = hist_breaks, labels = FALSE)
+
+#Visualize Histogram Discretization
+
+ggplot(subset_data, aes(x = hist_discretization, fill = as.factor(hist_discretization))) +
+
+geom_bar() +
+
+labs(title = "Histogram Discretization",
+
+x = "Discretized Bins",
+
+y = "Frequency") +
+theme_minimal()
+
+```
+
+data discritization - david
+
+```{r}
+library(datasets)
+data("iris")
+head(iris)
+```
+
+```{r}
+
+library(cluster)    #  k-means
+library(dplyr)      # For data manipulation
+library(classInt)   # For equal frequency and equal width discretization
+library(datasets)
+data("iris")
+head(iris)
+
+
+# K-Means Discretization for SepalLength
+kmeans_result <- kmeans(iris$Petal.Length, centers=3)
+iris$SepalLength_discretized <- kmeans_result$cluster
+
+# Equal-Width Discretization for SepalWidth
+breaks_width <- classIntervals(iris$Sepal.Width, n=3, style="equal") 
+iris$SepalWidth_discretized <- findInterval(iris$Sepal.Width, vec=breaks_width$brks)
+
+# Equal Frequency Discretization for PetalLength
+breaks_freq <- classIntervals(iris$Petal.Length, n=3, style="quantile") 
+iris$PetalLength_discretized <- findInterval(iris$Petal.Length, vec=breaks_freq$brks)
+
+# Assuming equal-frequency discretization here
+breaks_freq_petal_width <- classIntervals(iris$Petal.Width, n=3, style="quantile") # Adjust 'n' as needed
+iris$PetalWidth_discreteized <- findInterval(iris$Petal.Width, vec=breaks_freq_petal_width$brks)
+
+head(iris)
+
+```
+
+## Justifications
+
+SepalLength with K-Means: Sepal length can often exhibit natural clustering, where different species of iris might have distinctly different average sepal lengths. K-means discretization is effective in such scenarios because it groups data into clusters based on the mean values, which can align well with the natural groupings in the data.
+
+SepalWidth - Equal-Width Discretization: If sepal width has a fairly uniform distribution across its range, equal-width discretization is a reasonable approach.
+
+PetalLength - Equal Frequency Discretization: Petal length may have a skewed distribution, with more observations in certain ranges than others. Equal frequency discretization ensures that each bin contains approximately the same number of instances, which is beneficial for handling skewed distributions. It helps in balancing the representation across different ranges of petal length, avoiding the issue of having bins with too many or too few observations.
+
+PetalWidthCm - Alternative Discretization (Equal Frequency): Similar to petal length, petal width might also exhibit a skewed distribution. Since ChiMerge is not directly implemented in R and is more complex to apply, using equal frequency discretization for petal width is a practical alternative. This method will ensure that each discretized category has a roughly equal number of observations, which is particularly useful if the data is not uniformly distributed.
+
+## Comparisons between the original attributes and discretisized attributes
+
+```{r}
+
+# Load necessary libraries
+library(cluster)    # For k-means
+library(dplyr)      # For data manipulation
+library(classInt)   # For equal frequency and equal width discretization
+library(ggplot2)    # For creating plots
+library(datasets)
+
+# Summary statistics for original and discretized attributes
+original_summary <- sapply(iris[, 1:4], summary)
+discretized_summary <- sapply(iris[, 6:9], summary)
+
+print("Summary statistics for original attributes:")
+print(original_summary)
+
+print("Summary statistics for discretized attributes:")
+print(discretized_summary)
+
+# Histograms for original attributes
+par(mfrow=c(2,2)) # Layout for 2x2 plots
+for (i in 1:4) {
+  hist(iris[,i], main=colnames(iris)[i], xlab="Value", ylab="Frequency")
+}
+
+# Bar plots for discretized attributes
+par(mfrow=c(2,2)) # Layout for 2x2 plots
+for (i in 6:9) {
+  barplot(table(iris[,i]), main=colnames(iris)[i], xlab="Category", ylab="Frequency")
+}
+
+
+```
+
+## What to look for;
+
+Most the for attributes were skewed, after discretization, a uniform distribution was archived.
+
+## comparison using decison trees
+
+```{r}
+
+# Load necessary libraries
+library(caret)       # For data splitting and model training
+library(rpart)       # For decision tree models
+library(pROC)        # For AUC calculation
+
+# Assuming the iris dataset is already loaded and discretized
+
+# Split data into training and testing sets
+set.seed(123) # For reproducibility
+trainIndex <- createDataPartition(iris$Species, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+irisTrain <- iris[ trainIndex,]
+irisTest  <- iris[-trainIndex,]
+
+# Train a decision tree model on the original data
+model_original <- rpart(Species ~ Sepal.Length + Sepal.Width + Petal.Length + Petal.Width, 
+                        data = irisTrain, 
+                        method = "class")
+
+# Train a decision tree model on the discretized data
+model_discretized <- rpart(Species ~ SepalLength_discretized + SepalWidth_discretized + 
+                                   PetalLength_discretized + PetalWidth_discretized, 
+                           data = irisTrain, 
+                           method = "class")
+
+# Predict on the test set
+pred_original <- predict(model_original, irisTest, type = "class")
+pred_discretized <- predict(model_discretized, irisTest, type = "class")
+
+# Calculate performance metrics
+confusion_original <- confusionMatrix(pred_original, irisTest$Species)
+confusion_discretized <- confusionMatrix(pred_discretized, irisTest$Species)
+
+# Print the results
+print("Performance metrics for the original data model:")
+print(confusion_original)
+
+print("Performance metrics for the discretized data model:")
+print(confusion_discretized)
+
+
+```
+
+apriori
+
+```{r}
+library(arules)
+library(ggplot2)
+#library(DT)
+library(kableExtra)
+#library(pander)
+data("Groceries")
+
+# using apriori() function
+Grocery_rules <- apriori(Groceries, parameter = list(supp = 0.04, conf = 0.3))
+
+# using inspect() function
+kable(inspect(Grocery_rules))
+
+```
+
+```{r}
+# using item
+rules <- apriori(Groceries, parameter = list(supp = 0.001, conf = 0.08, minlen = 2), appearance = list(default = "lhs", rhs = "whole milk"), control = list(verbose = FALSE))
+inspect(head(sort(rules, by="lift"), 5))
+```
+
+```{r}
+
+# Run ECLAT algorithm
+eclat_rules <- eclat(Groceries, parameter = list(supp = 0.01, maxlen = 10))
+# Inspect the rules
+inspect(head(eclat_rules))
+```
+
+anomaly detection
+
+```{r}
+library(readxl)
+life_expectancy <- read_excel("C:/Users/sharo/Desktop/DSA2040/lifeexpectancy dataset.xlsx")
+
+View(life_expectancy)
+```
+
+k-nearest neighbors
+
+```{r}
+library(ggplot2)
+library(class)
+library(dplyr)
+library(dbscan)
+library(FNN)
+
+frac <- life_expectancy %>% select(Adult_Mortality, Measles) #set the numbers of neighbors
+k <- 5
+
+#calculate the k-nearest neighbors and their distances
+knn_result <- get.knnx(data = as.matrix(frac), query = as.matrix(frac), k = k)
+
+# extract the distances to the kth nearest neighbor
+distances <- knn_result$nn.dist[, k]
+
+# determine a threshold for anomalies (e.g. 95th percentile of distances)
+threshold <- quantile(distances, 0.95)
+anomalies_knn <- distances > threshold
+
+
+Plot <- ggplot(frac, aes(x= Adult_Mortality, y = Measles)) +
+  geom_point(aes(color = anomalies_knn), alpha = 0.6) + 
+  scale_color_manual(values = c("FALSE" = "black", "TRUE" = "red")) + 
+  theme_minimal() +  labs(title = "Anomaly Detection with KNN on Sampled Diamonds Dataset", x = "Adult", y = "Measles")
+
+Plot
+```
+
+Apply DBSCAN
+
+```{r}
+# Apply DBSCAN, you may need to adjust eps and minPts based on your data
+dbscan_result <- dbscan(frac, eps = 42, minPts = 5)
+# Identify anomalies (points not assigned to any cluster are considered anomalies)
+anomalies_dbscan <- dbscan_result$cluster == 0
+# Visualizing anomalies detected by DBSCAN
+Plot2<-ggplot(frac, aes(x = Adult_Mortality, y = Measles)) +  
+  geom_point(aes(color = as.factor(anomalies_dbscan)), alpha = 0.6) +
+  scale_color_manual(values = c("FALSE" = "black", "TRUE" = "red")) +
+  theme_minimal() +  labs(title = "DBSCAN Anomaly Detection on Sampled Diamonds Dataset", x = "Mortality", y = "Measles", color = "Anomaly") 
+
+Plot2
+```
+
+Z-scores
+
+```{r}
+# Calculate Z-scores for the 'Measles' attribute directly within the 'frac' dataframe. The abs() function is used to get the absolute value because we're interested in deviations on both sides of the mean.
+frac$z_score <- abs((frac$Measles - mean(frac$Measles)) / sd(frac$Measles))
+# Define a threshold for anomalies (e.g., Z-score > 3)
+threshold <- 3
+# Identify anomalies
+frac$anomalies <- frac$z_score > threshold
+
+Plot3 <- ggplot(frac, aes(x = Adult_Mortality, y = Measles)) +
+  geom_point(aes(color = as.logical(anomalies)), alpha = 0.6) + # Corrected line
+  scale_color_manual(values = c("FALSE" = "black", "TRUE" = "red")) + 
+  theme_minimal() + labs(title = "Statistical Anomaly Detection",x = "Adult Mortality", y = "Measles", color = "Anomaly Indicator")
+Plot3 
+
+```

@@ -1,0 +1,167 @@
+---
+title: "Mid Semester"
+author: "Nzambuli Daniel 665721"
+date: "2024-02-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 1
+
+## *i) Differentiate the three Anomaly detection techniques **(5mks)***
+
+1.  **K Nearest Neighbour** (KNN) – technique associates a value to its k nearest neighbor. The points furthest from the neighbor are considered anomalies. `It needs the anomalies to be  isolated from the dense regions.`
+2.  **Density Based Spatial Clustering of Applications with Noise** (DBSCAN) – Groups together closely packed points into clusters. The points that lie alone are grouped in low density regions and then marked as anomalies. `it needs data to be grouped as maximum distance between points and minimum elements to form a cluster.` **DOES NOT** need prior clusters but **points without prior clusters** are automatically anomalies.
+3.   **Z - score** uses a normal distribution curve to compare to the highest and lowest value in a distribution. Values over a threshold standard deviation sd `4` are considered anomalies. `Assumes that data is normally distributed`
+
+## ***ii)**A financial institution analyzes customer transactions to identify potential fraud. How could anomaly detection be used in this situation? How would you balance the need for accurate fraud detection with the risk of wrongly flagging legitimate transactions? **(4mks)***
+
+In finance, there is a trend to how money gets into a persons account. This can be tracked to indicate either an `over withdrawal of money from an account` or `an excessive increase in the number of deposits to an account` .
+
+Over withdrawal may indicate forced transaction while an excessive increase in the amount deposited can indicate miscellaneous sources of income.
+
+The financial institution can grade people based on the jobs they say they do when opening a bank account. Based on this grouping an individual will tend to be within the normal distribution, or clusters of the already present account holders in the bank with the same job. The people also tend to have similar spending habits based on their income level and money flow needs.
+
+If an individual begins to move towards the extremes of their groups and the move is too rapid a system can be developed to track this as a potential for fraud. To prevent `wrongful flagging` individuals can be required to re-declare their sources of money or a temporary lock can be placed on their account until a proper filling of financial improvement and financial need is filled respectively
+
+# Question 2
+
+## *i) Using the Groceries dataset, find the top 5 most frequent itemsets with a minimum support threshold of 0.05 using the Apriori algorithm. Provide the itemsets and their corresponding support values. **(3mks)***
+
+### Data
+
+```{r}
+library(arules)
+
+data(Groceries)
+
+head(Groceries)
+```
+
+### Apriori Analysis
+
+```{r}
+apri_rules = apriori(Groceries, parameter = list(supp = 0.09,target="frequent itemsets"))
+inspect(apri_rules)
+
+```
+
+### Get the values
+
+```{r}
+inspect(head(apri_rules, sort = "support", 10))
+```
+
+| ITEMS            | SUPPORT |
+|------------------|---------|
+| Shopping bags    | 0.0985  |
+| Sausages         | 0.09395 |
+| Bottled Water    | 0.1105  |
+| Tropical Fruit   | 0.1049  |
+| Root Vegetables  | 0.109   |
+| Soda             | 0.17438 |
+| Yogurt           | 0.1395  |
+| rolls/ buns      | 0.1839  |
+| other vegetables | 0.1935  |
+| whole milk       | 0.2555  |
+
+## *ii) Using the same Groceries dataset, identify the top 5 most frequent itemsets with a minimum support threshold of 0.09 using the ECLAT algorithm. Compare the results with those from the Apriori algorithm. **(2mks)***
+
+### Eclat analysis
+
+```{r}
+eclat_rules = eclat(Groceries, parameter = list(supp = 0.09, maxlen = 10, target = "frequent itemset"))
+inspect(head(eclat_rules, 10))
+```
+
++--------------------+------------+---------+
+| items              | support    | count   |
+|                    |            |         |
+| \<chr\>            | \<dbl\>    | \<int\> |
++:===================+===========:+========:+
+| {whole milk}       | 0.25551601 | 2513    |
++--------------------+------------+---------+
+| {other vegetables} | 0.19349263 | 1903    |
++--------------------+------------+---------+
+| {rolls/buns}       | 0.18393493 | 1809    |
++--------------------+------------+---------+
+| {yogurt}           | 0.13950178 | 1372    |
++--------------------+------------+---------+
+| {soda}             | 0.17437722 | 1715    |
++--------------------+------------+---------+
+| {root vegetables}  | 0.10899847 | 1072    |
++--------------------+------------+---------+
+| {tropical fruit}   | 0.10493137 | 1032    |
++--------------------+------------+---------+
+| {bottled water}    | 0.11052364 | 1087    |
++--------------------+------------+---------+
+| {sausage}          | 0.09395018 | 924     |
++--------------------+------------+---------+
+| {shopping bags}    | 0.09852567 | 969     |
++--------------------+------------+---------+
+
+### Comparing ECLAT and APRIORI
+
+**Similarities**
+
+-   Models indicate that whole milk is the most bought item in most grocery carts
+
+-   Models indicate that the least bought item is the shopping bag
+
+-   The models also offer a similar support value for all items
+
+## ***iii)** Using the Groceries dataset, find all association rules where **soda** is part of the LHS. Use support threshold of 0.05. & confidence of 0.05. What is the highest support value among these rules? **(3mks)***
+
+```{r}
+soda.rules <- apriori(Groceries, parameter = list(supp = 0.05, conf = 0.05, target = "frequent itemset"), appearance = list(lhs = "soda"), control = list(verbose = FALSE))
+
+inspect(sort(soda.rules, by = "support"))
+```
+
+### ANSWER
+
+Whole Milk
+
+## ***iv)** Generate rules from the Groceries dataset where coffee is only in the RHS. List the top 5 rules by their support values. **(4mks)***
+
+```{r}
+soda.rules <- apriori(Groceries, parameter = list(supp = 0.05, conf = 0.05, target = "frequent itemset"), appearance = list(rhs = "coffee"), control = list(verbose = FALSE))
+
+inspect(head(sort(soda.rules, by = "support"), 5))
+```
+
+# Question 3
+
+## *i) Using the airquality dataset, use the Z-score method to detect outliers in the Ozone column. Consider observations with a Z-score greater than 2 or less than -2 as outliers. How many outliers are there? **(3mks)***
+
+```{r}
+data(airquality)
+head(airquality)
+```
+
+```{r}
+d = na.omit(airquality)
+
+d$z_score = abs((d$Ozone - mean(d$Ozone))/ sd(d$Ozone))
+d$outliers = d$z_score > 2
+d$count = rep(1, nrow(d))
+
+library(dplyr)
+data = d %>% group_by(outliers) %>% summarise(count = sum(count))
+data
+```
+
+There are `6` outliers in OZONE
+
+## ***ii)** Discuss the role of a data warehouse in supporting the data mining process for a global retail chain. How can data warehousing facilitate the extraction of actionable business intelligence? Consider Data Integration, Historical Data Analysis, Data Quality Scalability and Performance in your answer **(6mks)***
+
+Data warehouse stores a collection of `historical data` about the retail chain. This is done through the data enterprise that can track regional sales and orders. The virtual enterprise that can track the individual customers at each local shop and detect repeat acquisitions and the combinations of repeated acquisitions
+
+Data warehouses have a MOLAP (Multi-dimensional OLAP) system that is able to track non relational data. This tends to be the high frequency data that is generated on a daily even hourly basis by the regional business. They also have a ROLAP(Relational OLAP) system that uses relational databases to increase the efficiency of data analysis by documenting the way different stores are related. This is also the permanent long-term storage that allows the whole organization to have a central information store. This coupled with a HOLAP(Hybrid OLAP) which is able to allow `data integration` between the two systems.
+
+Following a uniform development system data extraction, loading and transformation protocol ensures that data is consistent in how it is stored across all the departments of the. Consistency of the data ensures that the `data quality` is always high. A uniform system allows for templetized development of data infrastructure making `data scalability easier`
+
+All these benefits ensure that the decisions the organization makes are informed and actionable as there is enough data to guide decisions, the data is of high quality, the data collection systems are highly integrated and the systems can be scaled across the whole international organization.
